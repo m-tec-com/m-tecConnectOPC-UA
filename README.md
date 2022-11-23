@@ -17,3 +17,8 @@ The IP-Adress of the OPC UA server in the duo-mix connect and SMP connect is `10
 To get started you can use [uaExpert from Unified Automation](https://www.unified-automation.com/products/development-tools/uaexpert.html).
 
 When controlling the machine externally you have to send a toggle-bit.
+Simply subscribe to `Livebit2extern` and actively update `Livebit2DuoMix` at the duo-mix connect. Check out the [example](examples/05_livebit.py)
+
+> :warning:
+>
+> Use `Livebit2machine` instead of `Livebit2DuoMix` at the SMP connect.

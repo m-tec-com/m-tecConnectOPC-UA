@@ -14,8 +14,12 @@ writer.load_type_definitions()
 class LivebitHandler(object):
     def datachange_notification(self, node, value, data):
         print("Livebit:", value)
-        Livebit2DuoMix = writer.get_node("ns=4;s=|var|B-Fortis CC-Slim S04.Application.GVL_OPC.Livebit2DuoMix")
-        Livebit2DuoMix.set_value(ua.Variant(value, ua.VariantType.Boolean))
+        
+        # use the OPC-UA variable Livebit2DuoMix when using a duo-mix, Livebit2machine when using a SMP
+        Livebit2machine = writer.get_node("ns=4;s=|var|B-Fortis CC-Slim S04.Application.GVL_OPC.Livebit2DuoMix")
+        #Livebit2machine = writer.get_node("ns=4;s=|var|B-Fortis CC-Slim S04.Application.GVL_OPC.Livebit2machine")
+        
+        Livebit2machine.set_value(ua.Variant(value, ua.VariantType.Boolean))
 
 Livebit2extern = reader.get_node("ns=4;s=|var|B-Fortis CC-Slim S04.Application.GVL_OPC.Livebit2extern")
 subHandler = LivebitHandler()
