@@ -3,17 +3,20 @@ from opcua import Client, ua #https://github.com/FreeOpcUa/python-opcua
 class Mixingpump:
 
     def __init__(self):
-        self.baseNode = "ns=4;s=|var|B-Fortis CC-Slim S04.Application.GVL_OPC"
+        self.baseNode = "ns=4;s=|var|B-Fortis CC-Slim S04.Application.GVL_OPC."
 
     """Connects to the machine using the provided IP
     Args:
         ip: IP-Adress of the machine
     """
     def connect(self, ip):
-        self.opcuaClient = Client(ip)
-        self.opcuaClient.connect()
-        self.opcuaClient.load_type_definitions()
-        self.subscribe("livebit2extern", self.changeLivebit, 500)
+        self.reader = Client(ip)
+        self.writer = Client(ip)
+        self.reader.connect()
+        self.writer.connect()
+        self.reader.load_type_definitions()
+        self.writer.load_type_definitions()
+        self.subscribe("Livebit2extern", self.changeLivebit, 500)
     
     """Changes the value of a OPCUA Variable
     Args:
@@ -21,16 +24,24 @@ class Mixingpump:
         value: value to change the variable to
         typ: string of variable type (bool, int, float)
     """
-    def change(parameter, value, typ)
+    def change(self, parameter, value, typ):
+        #print(parameter, value, typ)
         if typ == "bool":
-            t = ua.Variant.Boolean
+            t = ua.VariantType.Boolean
         elif typ == "int":
-            t = ua.Variant.UInt16
-        elif typ == "float"
-            t = ua.Variant.Float
+            t = ua.VariantType.UInt16
+        elif typ == "float":
+            t = ua.VariantType.Float
         else:
             return
-        self.opcuaClient.get_node(self.baseNode + parameter).set_value(ua.Variant(value, t))
+        self.writer.get_node(self.baseNode + parameter).set_value(ua.Variant(value, t))
+
+    """Reades the value of a OPCUA Variable
+    Args:
+        variable: Variable to read
+    """
+    def read(self, parameter):
+        return self.reader.get_node(self.baseNode + parameter).get_value()
 
     """Subscribes to given parameter
     Args:
@@ -40,8 +51,8 @@ class Mixingpump:
     """
     def subscribe(self, parameter, callback, intervall):
         subscriptionHandler = OpcuaSubscriptionHandler(parameter, callback)
-        subscription = self.opcuaClient.create_subscription(intervall, subscriptionHandler)
-        subscription.subscribe_data_change(self.change("." + nodeName))
+        subscription = self.reader.create_subscription(intervall, subscriptionHandler)
+        subscription.subscribe_data_change(self.reader.get_node(self.baseNode + parameter))
 
 
 
@@ -51,17 +62,17 @@ class Mixingpump:
         value: The value to change the Livebit to
     """
     def changeLivebit(self, value, parameter):
-        self.change(".Livebit2duoMix", value, "bool")
+        self.change("Livebit2machine", value, "bool")
 
     """Stops the machine
     """
     def start(self):
-        self.change(".Remote_start", True, "bool")
+        self.change("Remote_start", True, "bool")
 
     """Stops the machine
     """
     def stop(self):
-        self.change(".Remote_start", False, "bool")
+        self.change("Remote_start", False, "bool")
 
     """Changes the speed of the mixingpump
     Args:
@@ -69,7 +80,7 @@ class Mixingpump:
     """
     def setSpeed(self, speed):
         analogSpeed = speed/50*65535 # 50Hz = 65535, 0Hz = 0
-        self.change(".set_value_mixingpump", analogSpeed, "int")
+        self.change("set_value_mixingpump", int(analogSpeed), "int")
 
     """Changes the state of a Digital Output
     Args:
@@ -78,9 +89,9 @@ class Mixingpump:
     """
     def setDigital(self, pin, value):
         if pin < 1 or pin > 8:
-            print("Pin number (" + pin + ") out of range (1 - 8)")
+            print("Pin number (" + str(pin) + ") out of range (1 - 8)")
             return 
-        self.change(".reserve_DO_" + pin, value, "bool")
+        self.change("reserve_DO_" + str(pin), value, "bool")
 
     """Changes the state of a Analog Output
     Args:
@@ -89,16 +100,16 @@ class Mixingpump:
     """
     def setAnalog(self, pin, value):
         if pin < 1 or pin > 2:
-            print("Pin number (" + pin + ") out of range (1 - 2)")
+            print("Pin number (" + str(pin) + ") out of range (1 - 2)")
             return 
-        self.change(".reserve_AO_" + pin, value, "bool")
+        self.change("reserve_AO_" + str(pin), value, "int")
 
     """Reads the speed of the mixingpump
     Returns:
         Speed in Hz
     """
     def getSpeed(self):
-        speed = self.change(".actual_value_mixingpump").get_value()
+        speed = self.read("actual_value_mixingpump")
         return speed/65535*50 # 50Hz = 65535, 0Hz = 0
 
     """Reads the state of a Digital Input
@@ -107,11 +118,11 @@ class Mixingpump:
     Returns:
         actual value (true / false)
     """
-    def getDigital(self, pin, value):
+    def getDigital(self, pin):
         if pin < 1 or pin > 10:
-            print("Pin number (" + pin + ") out of range (1 - 10)")
+            print("Pin number (" + str(pin) + ") out of range (1 - 10)")
             return
-        return self.change(".reserve_DI_" + pin).get_value()
+        return self.read("reserve_DI_" + str(pin))
 
     """Reads the state of a Analog Input
     Args:
@@ -119,39 +130,39 @@ class Mixingpump:
     Returns:
         actual value (0 - 65535)
     """
-    def getAnalog(self, pin, value):
+    def getAnalog(self, pin):
         if pin < 1 or pin > 5:
-            print("Pin number (" + pin + ") out of range (1 - 5)")
+            print("Pin number (" + str(pin) + ") out of range (1 - 5)")
             return
-        return self.change(".reserve_AI_" + pin).get_value()
+        return self.read("reserve_AI_" + str(pin))
 
     """Reads if machine is in error state
     Returns:
         is error? (true/false)
     """
     def isError(self):
-        return self.change(".error").get_value()
+        return self.read("error")
     
     """Reads the error number of the machine
     Returns:
         error number (0 = none)
     """
     def getError(self):
-        return self.change(".error_no").get_value()
+        return self.read("error_no")
 
     """Checks if the machine is ready for operation (on, remote, mixer and mixingpump on)
     Returns:
         ready for operation (true/false)
     """
     def isReadyForOperation(self):
-        return self.change(".Ready_for_operation").get_value()
+        return self.read("Ready_for_operation")
 
     """Checks if the mixer is running (in automatic mode)
     Returns:
         mixer running
     """
     def isMixerRunning(self):
-        return self.change(".aut_mixer").get_value()
+        return self.read("aut_mixer")
 
     """Checks if the mixingpump is running
     Returns:
@@ -165,42 +176,35 @@ class Mixingpump:
         mixingpump is running on power supply (true/false)
     """
     def isMixingpumpRunningNet(self):
-        return self.change(".aut_mixingpump_net").get_value()
+        return self.read("aut_mixingpump_net")
 
     """Checks if the mixingpump is running on frequency converter supply (in automatic mode)
     Returns:
         mixingpump is running on frequency converter supply (true/false)
     """
     def isMixingpumpRunningFc(self):
-        return self.change(".aut_mixingpump_fc").get_value()
-
-    """Checks if the water pump is running (in automatic mode)
-    Returns:
-        waterpump is running (true/false)
-    """
-    def isWaterpump(self):
-        return self.change(".aut_waterpump").get_value()
+        return self.read("aut_mixingpump_fc")
 
     """Checks if the selenoid valve is open (in automatic mode)
     Returns:
         selenoid valve is open (true/false)
     """
-    def isSelenoidValve(self):
-        return self.change(".aut_selenoid_valve").get_value()
+    def isSolenoidValve(self):
+        return self.read("aut_solenoid_valve")
     
     """Checks if the water pump is running (in automatic mode)
     Returns:
         waterpump is running (true/false)
     """
     def isWaterpump(self):
-        return self.change(".aut_waterpump").get_value()
+        return self.read("aut_waterpump")
 
     """Checks if remote is connected
     Returns:
         remote is connected (true/false)
     """
     def isRemote(self):
-        return self.change(".Remote_connected").get_value()
+        return self.read("Remote_connected")
 
 
 
