@@ -52,7 +52,8 @@ class Mixingpump:
     def subscribe(self, parameter, callback, intervall):
         subscriptionHandler = OpcuaSubscriptionHandler(parameter, callback)
         subscription = self.reader.create_subscription(intervall, subscriptionHandler)
-        subscription.subscribe_data_change(self.reader.get_node(self.baseNode + parameter))
+        handler = subscription.subscribe_data_change(self.reader.get_node(self.baseNode + parameter))
+        return [subscription, handler]
 
 
 
@@ -79,7 +80,7 @@ class Mixingpump:
         speed: Speed in Hz
     """
     def setSpeed(self, speed):
-        analogSpeed = speed/50*65535 # 50Hz = 65535, 0Hz = 0
+        analogSpeed = speed/100*65535 # 100% = 65535, 0% = 0
         self.change("set_value_mixingpump", int(analogSpeed), "int")
 
     """Changes the state of a Digital Output
