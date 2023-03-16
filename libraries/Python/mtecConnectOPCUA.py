@@ -28,10 +28,13 @@ class Mixingpump:
         #print(parameter, value, typ)
         if typ == "bool":
             t = ua.VariantType.Boolean
+            value = bool(value)
         elif typ == "int":
             t = ua.VariantType.UInt16
+            value = int(value)
         elif typ == "float":
             t = ua.VariantType.Float
+            value = float(value)
         else:
             return
         self.writer.get_node(self.baseNode + parameter).set_value(ua.Variant(value, t))
