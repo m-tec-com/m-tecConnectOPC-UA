@@ -68,7 +68,7 @@ class Mixingpump:
     def changeLivebit(self, value, parameter):
         self.change("Livebit2machine", value, "bool")
 
-    """Stops the machine
+    """Starts the machine
     """
     def start(self):
         self.change("Remote_start", True, "bool")
@@ -77,6 +77,16 @@ class Mixingpump:
     """
     def stop(self):
         self.change("Remote_start", False, "bool")
+
+    """Starts the dosingpump
+    """
+    def startDosingpump(self):
+        self.change("state_dosingpump_on", True, "bool")
+
+    """Stops the dosingpump
+    """
+    def stopDosingpump(self):
+        self.change("state_dosingpump_on", False, "bool")
 
     """Changes the speed of the mixingpump
     Args:
