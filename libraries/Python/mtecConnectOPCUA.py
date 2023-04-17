@@ -88,6 +88,13 @@ class Mixingpump:
     def stopDosingpump(self):
         self.change("state_dosingpump_on", False, "bool")
 
+    """Changes the speed of the dosingpump
+    Args:
+        speed: Speed in %
+    """
+    def setSpeedDosingpump(self, speed):
+        self.change("set_value_dosingpump", int(speed), "float")
+
     """Changes the speed of the mixingpump
     Args:
         speed: Speed in Hz
