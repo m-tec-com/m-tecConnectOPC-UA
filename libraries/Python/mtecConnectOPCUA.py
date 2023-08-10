@@ -2,8 +2,8 @@ from opcua import Client, ua #https://github.com/FreeOpcUa/python-opcua
 
 class Mixingpump:
 
-    def __init__(self):
-        self.baseNode = "ns=4;s=|var|B-Fortis CC-Slim S04.Application.GVL_OPC."
+    def __init__(self, baseNode="ns=4;s=|var|B-Fortis CC-Slim S04.Application.GVL_OPC"):
+        self.baseNode = baseNode + "."
 
     """Connects to the machine using the provided IP
     Args:
@@ -103,6 +103,13 @@ class Mixingpump:
         analogSpeed = speed/100*65535 # 100% = 65535, 0% = 0
         self.change("set_value_mixingpump", int(analogSpeed), "int")
 
+    """Changes the water setting of the mixingpump
+    Args:
+        speed: amount in l/h
+    """
+    def setWater(self, speed):
+        self.change("set_value_water_flow", float(speed), "float")
+
     """Changes the state of a Digital Output
     Args:
         pin: Pin number (1 - 8)
@@ -132,6 +139,13 @@ class Mixingpump:
     def getSpeed(self):
         speed = self.read("actual_value_mixingpump")
         return speed/65535*50 # 50Hz = 65535, 0Hz = 0
+    
+    """Reads the set amount of water
+    Returns:
+        Amount in l/H
+    """
+    def getSetWater(self):
+        return self.read("set_value_water_flow")
 
     """Reads the state of a Digital Input
     Args:
