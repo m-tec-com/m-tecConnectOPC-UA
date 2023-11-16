@@ -2,8 +2,8 @@ from opcua import Client, ua #https://github.com/FreeOpcUa/python-opcua
 
 class Mixingpump:
 
-    def __init__(self, baseNode="ns=4;s=|var|B-Fortis CC-Slim S04.Application.GVL_OPC"):
-        self.baseNode = baseNode + "."
+    def __init__(self, baseNode="ns=4;s=|var|B-Fortis CC-Slim S04.Application.GVL_OPC."):
+        self.baseNode = baseNode
 
     """Connects to the machine using the provided IP
     Args:
