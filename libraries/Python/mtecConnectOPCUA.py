@@ -29,8 +29,11 @@ class Mixingpump:
         if typ == "bool":
             t = ua.VariantType.Boolean
             value = bool(value)
-        elif typ == "int":
+        elif typ == "int16":
             t = ua.VariantType.UInt16
+            value = int(abs(value))
+        elif typ == "int32":
+            t = ua.VariantType.Int32
             value = int(value)
         elif typ == "float":
             t = ua.VariantType.Float
@@ -101,7 +104,7 @@ class Mixingpump:
     """
     def setSpeed(self, speed):
         analogSpeed = speed/100*65535 # 100% = 65535, 0% = 0
-        self.change("set_value_mixingpump", int(analogSpeed), "int")
+        self.change("set_value_mixingpump", int(analogSpeed), "uint16")
 
     """Changes the water setting of the mixingpump
     Args:
@@ -130,7 +133,7 @@ class Mixingpump:
         if pin < 1 or pin > 2:
             print("Pin number (" + str(pin) + ") out of range (1 - 2)")
             return 
-        self.change("reserve_AO_" + str(pin), value, "int")
+        self.change("reserve_AO_" + str(pin), value, "uint16")
 
     """Reads the speed of the mixingpump
     Returns:
