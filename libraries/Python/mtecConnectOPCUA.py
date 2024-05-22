@@ -29,7 +29,7 @@ class Mixingpump:
         if typ == "bool":
             t = ua.VariantType.Boolean
             value = bool(value)
-        elif typ == "int16":
+        elif typ == "uint16":
             t = ua.VariantType.UInt16
             value = int(abs(value))
         elif typ == "int32":
