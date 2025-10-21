@@ -1,0 +1,79 @@
+<head>
+    <title>Frequenzumrichter Modbus RTU</title>
+    <style>
+        body {
+            display: flex;
+            margin: 5vw;
+            font-family: sans-serif;
+        }
+
+        .circle {
+            height: 20vw;
+            width: 20vw;
+            margin: 5vw;
+            border: none;
+            border-radius: 50%;
+            background-color: lightgray;
+            text-align: center;
+            line-height: 20vw;
+            font-size: 2vw;
+        }
+
+        .circle:focus {
+            outline: none;
+        }
+
+        .circle:disabled {
+            cursor: not-allowed !important;
+            color: black;
+        }
+    </style>
+</head>
+<button id="connectButton" class="circle" style="cursor: pointer; line-height: 5vw" onclick="connect()">
+    Verbinden
+</button>
+<div id="s2" class="circle" style="cursor: help">Betriebsbereit</div>
+<button id="runButton" class="circle" style="cursor: pointer" onclick="startStop()" disabled>Start</button>
+<script src="https://cdn.jsdelivr.net/gh/m-tec-com/mtecconnect3dcp/JavaScript/mtecconnect3dcp.js"></script>
+<script>
+
+    var pump = new Pump();
+    pump._keepaliveCommand = "03FD060001";
+
+    async function connect() {
+        await pump.connect();
+        await (ready = pump.s_ready);
+        pump.keepalive(switches, 250);
+        document.getElementById("runButton").disabled = false;
+        document.getElementById("connectButton").disabled = true;
+        document.getElementById("connectButton").innerHTML = "Schnittstelle</br>verbunden";
+        document.getElementById("connectButton").style.backgroundColor = "lightgreen";
+        document.getElementById("runButton").style.backgroundColor = "lightcoral";
+    }
+
+    function switches(value) {
+        isReady = ((value % 32) - (value % 16) != 0);
+        isRemote = ((value % 16) - (value % 8) != 0);
+        if (isReady && isRemote) {
+            document.getElementById("s2").style.backgroundColor = "green";
+	    document.getElementById("runButton").disabled = false;
+        } else {
+            document.getElementById("s2").style.backgroundColor = "red";
+	    document.getElementById("runButton").disabled = true;
+        }
+    }
+
+    running = false;
+    async function startStop() {
+        running = !running;
+        if (running) {
+            await (pump.speed = 20);
+            document.getElementById("runButton").innerHTML = "Stop";
+            document.getElementById("runButton").style.backgroundColor = "lightgreen";
+        } else {
+            await (pump.speed = 0);
+            document.getElementById("runButton").innerHTML = "Start";
+            document.getElementById("runButton").style.backgroundColor = "lightcoral";
+        }
+    }
+</script>

@@ -1,0 +1,59 @@
+<table>
+    <tr>
+        <td><button id="connectButton" onclick="connect()">Connect</button></td>
+        <td></td>
+        <td><button id="stopButton" onclick="stop()" disabled style="width: 50%; margin:0% 25%;">Stop</button></td>
+    </tr>
+    <tr>
+        <td>Input:</td>
+        <td id="speedSliderValue" style="width: 20%;">0</td>
+        <td><input id="speedSlider" type="range" min="-100" max="100" value="0" disabled></td>
+    </tr>
+    <tr>
+        <td>Output:</td>
+        <td id="speedOutput"></td>
+        <td>Hz</td>
+    </tr>
+</table>
+
+<script src="https://cdn.jsdelivr.net/gh/m-tec-com/mtecconnect3dcp/JavaScript/mtecconnect3dcp.js"></script>
+<script>
+    var pump = new mtecConnectModbus();
+    pump.settings.log = true;
+
+    async function connect() {
+        var connected = await pump.connect();
+        if(!connected){
+            return;
+        }
+	pump.settings.keepAlive.callback = updateOutput;
+	pump.settings.keepAlive.command = "03FD000001";        
+        activateSlider();
+    }
+    
+    async function stop() {
+	console.log("");
+	console.log("stop");
+        await (pump.speed = 0);
+        document.getElementById("speedSlider").value = 0;
+        document.getElementById("speedSliderValue").innerHTML = 0;
+    }
+        
+    function activateSlider(){
+        document.getElementById("connectButton").disabled = true;
+        document.getElementById("stopButton").disabled = false;
+        document.getElementById("speedSlider").disabled = false;
+        document.getElementById("speedSlider").addEventListener("change", async function(){
+            console.log("");
+            console.log("slider    " + this.value);
+            await (pump.speed = this.value);
+        });
+        document.getElementById("speedSlider").addEventListener("input", function(){
+            document.getElementById("speedSliderValue").innerHTML = this.value;
+        });
+    }
+    
+    async function updateOutput(value){
+        document.getElementById("speedOutput").innerHTML = value / 100;
+    }
+</script>

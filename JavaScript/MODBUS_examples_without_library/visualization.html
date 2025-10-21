@@ -1,0 +1,389 @@
+<head>
+<title>Frequenzumrichter ModbusRTU</title>
+<style>
+    label, input[type=checkbox] {
+        cursor: pointer;
+    }
+
+    td{
+	padding: 0px 10px;
+    }
+</style>
+</head>
+
+<button id="connectButton" onclick="fuConnect()">Connect</button>
+<span id="serialAvailable" style="display:none"> Please use Chrome 89 (or later) or enable <code>chrome://flags/#enable-experimental-web-platform-features</code></span>
+<hr>
+<div id="communicationCommand1Form">
+    <strong>Communication Command 1</strong>
+    <div class="line">
+        <input id="runCommand1Checkbox0" class="runCommand1Checkbox" type="checkbox">
+        <label for="runCommand1Checkbox0">Preset speed operation frequencies Bit 0</label>
+    </div>
+    <div class="line">
+        <input id="runCommand1Checkbox1" class="runCommand1Checkbox" type="checkbox">
+        <label for="runCommand1Checkbox1">Preset speed operation frequencies Bit 1</label>
+    </div>
+    <div class="line">
+        <input id="runCommand1Checkbox2" class="runCommand1Checkbox" type="checkbox">
+        <label for="runCommand1Checkbox2">Preset speed operation frequencies Bit 2</label>
+    </div>
+    <div class="line">
+        <input id="runCommand1Checkbox3" class="runCommand1Checkbox" type="checkbox">
+        <label for="runCommand1Checkbox3">Preset speed operation frequencies Bit 3</label>
+    </div>
+    <div class="line">
+        <input id="runCommand1Checkbox4" class="runCommand1Checkbox" type="checkbox">
+        <label for="runCommand1Checkbox4">
+            Motor selection (1 or <u>2</u>
+            )
+        </label>
+    </div>
+    <div class="line">
+        <input id="runCommand1Checkbox5" class="runCommand1Checkbox" type="checkbox">
+        <label for="runCommand1Checkbox5">
+            PI D control (Normal operation or <u>PI D OFF</u>
+            )
+        </label>
+    </div>
+    <div class="line">
+        <input id="runCommand1Checkbox6" class="runCommand1Checkbox" type="checkbox">
+        <label for="runCommand1Checkbox6">
+            Acceleration/deceleration pattern selection (1 or <u>2</u>
+            ) 
+        </label>
+    </div>
+    <div class="line">
+        <input id="runCommand1Checkbox7" class="runCommand1Checkbox" type="checkbox">
+        <label for="runCommand1Checkbox7">Forced DC braking</label>
+    </div>
+    <div class="line">
+        <input id="runCommand1Checkbox8" class="runCommand1Checkbox" type="checkbox">
+        <label for="runCommand1Checkbox8">Jog run</label>
+    </div>
+    <div class="line">
+        <input id="runCommand1Checkbox9" class="runCommand1Checkbox" type="checkbox">
+        <label for="runCommand1Checkbox9">Reverse</label>
+    </div>
+    <div class="line">
+        <input id="runCommand1Checkbox10" class="runCommand1Checkbox" type="checkbox">
+        <label for="runCommand1Checkbox10">Run</label>
+    </div>
+    <div class="line">
+        <input id="runCommand1Checkbox11" class="runCommand1Checkbox" type="checkbox">
+        <label for="runCommand1Checkbox11">Coast stop</label>
+    </div>
+    <div class="line">
+        <input id="runCommand1Checkbox12" class="runCommand1Checkbox" type="checkbox">
+        <label for="runCommand1Checkbox12">Emergency stop</label>
+    </div>
+    <div class="line">
+        <input id="runCommand1Checkbox13" class="runCommand1Checkbox" type="checkbox">
+        <label for="runCommand1Checkbox13">Fault reset</label>
+    </div>
+    <div class="line">
+        <input id="runCommand1Checkbox14" class="runCommand1Checkbox" type="checkbox" checked>
+        <label for="runCommand1Checkbox14">Frequency priority selection</label>
+    </div>
+    <div class="line">
+        <input id="runCommand1Checkbox15" class="runCommand1Checkbox" type="checkbox" checked>
+        <label for="runCommand1Checkbox15">Command priority selection</label>
+    </div>
+    <div id="communicationCommand1Value">
+        01 06 FA00 <u>C000</u> E912
+    </div>
+</div>
+<hr>
+<table id="writeVaraiables">
+    <tr>
+        <th>Variable</th>
+        <th>Value</th>
+        <th>Command</th>
+        <th></th>
+    </tr>
+    <tr>
+        <td>Custom</td>
+        <td></td>
+        <td>
+            <input id="customCommand" style="width: 140px;">
+            <input id="customFormCRC" value="crc" style="width:40px;" disabled>
+        </td>
+        <td>
+            <button onclick="sendCustom()">Send</button>
+        </td>
+    </tr>
+    <tr>
+        <td>Frequency</td>
+        <td>
+            <input id="frequencyInput" type="number" value="0" min="0">
+        </td>
+        <td id="frequencyOutput">01 06 FA01 <u>0000</u> E8D2</td>
+        <td>
+            <button onclick="sendFrequencyCommand()">Send</button>
+        </td>
+    </tr>
+</table>
+<hr>
+<table id="readVariables">
+    <tr>
+        <th>Variable</th>
+        <th>Field</th>
+        <th>Command</th>
+        <th>Answer</th>
+        <th>Value</th>
+    </tr>
+    <tr>
+        <td>Custom</td>
+        <td></td>
+        <td id="customCommandValue"></td>
+        <td id="customAnswer"></td>
+        <td id="customValue"></td>
+    </tr>
+    <tr>
+        <td>Amperage</td>
+        <td>FD03</td>
+        <td>01 03 <u>FD03</u> 0001 45A6</td>
+        <td id="amperageAnswer">-- -- -- <u>----</u> ----</td>
+        <td>
+            <span id="amperageValue">-</span>
+            %
+        </td>
+    </tr>
+    <tr>
+        <td>Rotation</td>
+        <td>FE90</td>
+        <td>01 03 <u>FE90</u> 0001 B5CF</td>
+        <td id="rotationAnswer">-- -- -- <u>----</u> ----</td>
+        <td>
+            <span id="rotationValue">-</span>
+            rpm
+        </td>
+    </tr>
+    <tr>
+        <td>Torque</td>
+        <td>FD18</td>
+        <td>01 03 <u>FD18</u> 0001 35A1</td>
+        <td id="torqueAnswer">-- -- -- <u>----</u> ----</td>
+        <td>
+            <span id="torqueValue">-</span>
+            %
+        </td>
+    </tr>
+    <tr>
+        <td>S2(0bxxx<u>x</u>xxxx)</td>
+        <td>FD06</td>
+        <td>01 03 <u>FD06</u> 0001 55A7</td>
+        <td id="s2Answer">-- -- -- <u>----</u> ----</td>
+        <td>
+            <span id="s2Value">-</span>
+        </td>
+    </tr>
+</table>
+<hr>
+<table style="color:gray">
+<tr><th>Beschreibung</th><th colspan="5">Anfrage</th><th colspan="5">Antwort</th></tr>
+<tr><th></th><th>ID-FU</th><th>Befehl</th><th>Parameter</th><th>Daten</th><th>CRC</th><th>ID-FU</th><th>Befehl</th><th>Byte</th><th>Daten</th><th>CRC</th></tr>
+<tr><td>Starten in Vorwärtslauf</td><td>01</td><td>06</td><td>FA00</td><td>C400</td><td>EBD2</td><td colspan="5" style="text-align:center">= Anfrage</td></tr>
+<tr><td>Starten in Rückwärtslauf</td><td>01</td><td>06</td><td>FA00</td><td>C600</td><td>EAB2</td><td colspan="5" style="text-align:center">= Anfrage</td></tr>
+<tr><td>Frequenz 20Hz</td><td>01</td><td>06</td><td>FA01</td><td>07D0</td><td>EB7E</td><td colspan="5" style="text-align:center">= Anfrage</td></tr>
+<tr><td>Frequenz 60Hz</td><td>01</td><td>06</td><td>FA01</td><td>1770</td><td>E6C6</td><td colspan="5" style="text-align:center">= Anfrage</td></tr>
+<tr><td>Abfrage Frequenz</td><td>01</td><td>03</td><td>FD00</td><td>0001</td><td>B5A6</td><td>01</td><td>03</td><td>02</td><td>1770</td><td>B650</td></tr>
+<tr><td>Abfrage Stromstärke</td><td>01</td><td>03</td><td>FD03</td><td>0001</td><td>45A6</td><td>01</td><td>03</td><td>02</td><td>01F4</td><td>B853</td></tr>
+<tr><td>Abfrage S2</td><td>01</td><td>03</td><td>FD06</td><td>0001</td><td>55A7</td><td>01</td><td>03</td><td>02</td><td>0000</td><td>B844</td></tr>
+</table>
+
+<script>
+
+    serialOptions = {
+        baudRate: 19200,
+        dataBits: 8,
+        stopBits: 2,
+        parity: "none",
+        flowControl: "none"
+    }
+    sendFrequency = 10;
+
+    valueDiv = undefined;
+    commandBuffer = new Array();
+    running = false;
+    frequencyValue = "";
+    paramNum = 0;
+
+
+
+    if(!('serial' in navigator)){
+	document.getElementById("connectButton").disabled = true;
+	document.getElementById("serialAvailable").style.display = "block";
+    }
+
+
+    for (el of document.getElementsByClassName("runCommand1Checkbox")) {
+        el.addEventListener("change", function() {
+            //running = document.getElementById("runCommand1Checkbox10").checked;
+            sum = 0;
+            checkboxes = document.getElementsByClassName("runCommand1Checkbox");
+            for (i = 0; i < checkboxes.length; i++) {
+                sum += checkboxes[i].checked * (2 ** i);
+            }
+            hex = sum.toString(16).toLocaleUpperCase();
+            while (hex.length < 4) {
+                hex = "0" + hex;
+            }
+            crc = calculateCRC("0106fa00" + hex);
+            document.getElementById("communicationCommand1Value").innerHTML = `01 06 FA00 <u>${hex}</u> ${crc}`;
+            addCommand("0106fa00" + hex + crc);
+        });
+    }
+
+    document.getElementById("customCommand").addEventListener("keyup", function() {
+        hex = this.value;
+        if (hex == "") {
+            crc = "crc";
+        } else {
+            crc = calculateCRC(hex);
+        }
+        document.getElementById("customFormCRC").value = crc;
+    });
+
+    function sendCustom() {
+        c = document.getElementById("customCommand").value + document.getElementById("customFormCRC").value;
+        document.getElementById("customCommandValue").innerHTML = c;
+        addCommand(c);
+    }
+
+    document.getElementById("frequencyInput").addEventListener("keyup", frequencyChanged);
+    document.getElementById("frequencyInput").addEventListener("change", frequencyChanged);
+
+    function frequencyChanged() {
+        inp = Math.round(this.value * 100);
+        value = inp.toString(16);
+        while (value.length < 4) {
+            value = "0" + value;
+        }
+        command = "0106FA01" + value;
+        command += calculateCRC(command);
+	frequencyValue = command;
+        document.getElementById("frequencyOutput").innerHTML = command.slice(0, 2) + " " + command.slice(2, 4) + " " + command.slice(4, 8) + " <u>" + command.slice(8, 12) + "</u> " + command.slice(12);
+    }
+
+    function sendFrequencyCommand() {
+        addCommand(frequencyValue);
+    }
+
+    function calculateCRC(inp) {
+        buffer = fromHexString(inp);
+        crc = 0xFFFF;
+        for (pos = 0; pos < buffer.length; pos++) {
+            crc ^= buffer[pos];
+            for (i = 8; i != 0; i--) {
+                if ((crc & 0x0001) != 0) {
+                    crc >>= 1;
+                    crc ^= 0xA001;
+                } else
+                    crc >>= 1;
+            }
+        }
+        reversed = (crc % 256) * 256 + Math.floor(crc / 256);
+        crcstr = reversed.toString(16);
+        while (crcstr.length < 4) {
+            crcstr = "0" + crcstr;
+        }
+        return crcstr.toString(16).toLocaleUpperCase();
+    }
+
+    const fromHexString = hexString=>new Uint8Array(hexString.match(/.{1,2}/g).map(byte=>parseInt(byte, 16)));
+
+    function addCommand(hexString) {
+        commandBuffer.push(fromHexString(hexString));
+    }
+
+    window.setInterval(function() {
+        if (commandBuffer.length != 0) {
+            valueDiv = "custom";
+            writeToStream(commandBuffer.shift());
+        } else if (running) {
+            switch (paramNum) {
+            case 0:
+                valueDiv = "amperage";
+                writeToStream(fromHexString("0103FD03000145A6"));
+                break;
+            case 1:
+                valueDiv = "rotation";
+                writeToStream(fromHexString("0103FE900001B5CF"));
+                break;
+            case 2:
+                valueDiv = "torque";
+                writeToStream(fromHexString("0103FD18000135A1"));
+                break;
+	    case 3:
+		valueDiv = "s2";
+		writeToStream(fromHexString("0103FD06000155A7"));
+		break;
+            }
+            paramNum++;
+            if (paramNum > 3) {
+                paramNum = 0;
+            }
+        }
+    }, 1000 / sendFrequency);
+
+    function fuConnect() {
+        serialStart();
+    }
+
+    async function serialStart() {
+        port = await navigator.serial.requestPort();
+        await port.open(serialOptions);
+
+	running = true;
+
+        reader = port.readable.getReader();
+        readLoop();
+    }
+
+    async function readLoop() {
+        while (true) {
+            const {value, done} = await reader.read();
+            if (value) {
+                //console.log("read", value);
+                if (value[0] == 1 && value[1] == 3 && value[2] == 2) {
+                    str = "";
+                    for (v of value) {
+                        s = v.toString(16);
+                        if (s.length == 1) {
+                            s = "0" + s;
+                        }
+                        str += s;
+                    }
+		    str = str.slice(0, 2) + " " + str.slice(2, 4) + " " + str.slice(4, 6) + " <u>" + str.slice(6, 10) + "</u> " + str.slice(10);
+                    document.getElementById(valueDiv + "Answer").innerHTML = str.toLocaleUpperCase();
+
+                    i = value[3] * 256 + value[4];
+                    if (valueDiv == "amperage") {
+                        i /= 100;
+                    }
+                    if (valueDiv == "torque") {
+                        i /= 100;
+                    }
+		    if (valueDiv == "s2"){
+			i = ((i%32) - (i%16) != 0);
+			if(i){
+			     document.getElementById(valueDiv + "Value").style.color = "green";
+			} else {
+			     document.getElementById(valueDiv + "Value").style.color = "red";
+			}
+		    }
+                    console.log(i, valueDiv);
+                    document.getElementById(valueDiv + "Value").innerHTML = i;
+                }
+            }
+        }
+    }
+
+    function writeToStream(hexArray) {
+        //console.log("write", hexArray);
+        const writer = port.writable.getWriter();
+        writer.write(hexArray);
+        writer.releaseLock();
+    }
+</script>

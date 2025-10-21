@@ -1,0 +1,274 @@
+<head>
+    <title>m-tec Connect Modbus demo</title>
+    <style>
+        body{
+            margin: 0px;
+            font-family: sans-serif;
+        }
+        #wrapper{
+            display: flex;
+        }
+        .part {
+            height: 100vh;
+            width: 12.5vw;
+        }
+        #visual {
+            width: 75vw;
+        }
+        .title {
+            height: 10vh;
+            line-height: 10vh;
+            text-align: center;
+            font-size: 3vw;
+        }
+        .box {
+            height: 90vh;
+            overflow-y: scroll;
+        }
+        #interface{
+            height: 80vh;
+            padding-top: 10vh;
+        }
+
+        .row{
+            display: flex;
+        }
+
+        .round {
+            height: 10vw;
+            width: 10vw;
+            border-radius: 7.75vw;
+            margin: 2.5vw;
+            text-align: center;
+            border: 0.25vw solid;
+        }
+
+        #readyLED {
+            background-color: coral;
+        }
+        .inactive, .inactive {
+            background-color: #F0F0F0 !important;
+        }
+        .active{
+            background-color: lightgreen !important;
+        }
+        
+        .button{
+            cursor: pointer;
+        }
+
+        .smallLED, .value {
+            height: 1.6vw;
+            width: 4.6vw;
+            margin: 1.5vw 2.5vw;
+            background: #F0F0F0;
+            border: .2vw solid;
+            border-radius: 1vw;
+            font-size: 2vw;
+        }
+        .value{
+            border: .1vw solid transparent;
+            background-color: transparent;
+        }
+
+        .slider > .value{
+            display: flex;
+        }
+
+        .round.slider{
+            width: 35vw;
+        }
+
+        #speedSlider {
+            min-width: 22.5vw;
+            margin-right: 2vw;
+        }
+
+        #speedOutput::after, #speedSliderValue::after{
+            content: "Hz";
+        }
+        #currentOutput::after{
+            content: "%";
+        }
+
+        .buttonTitle{
+            font-size: 1.5vw;
+        }
+
+        .log {
+            color: black;
+        }
+        .log.read {
+            color: gray;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="wrapper">
+        <div id="visual" class="part">
+            <div class="title">Interface</div>
+            <div id="interface" class="box">
+
+                <div class="row">
+                    <div id="connectButton" onclick="connect()" class="round button"><div id="connectedLED" class="smallLED inactive"></div><div class="buttonTitle">Connect</div></div>
+                    <div onclick="startStop()" class="round startStopButton button"><div id="runningLED" class="smallLED inactive"></div><div id="runningTitle" class="buttonTitle">Start</div></div>
+                    <div id="slider" class="round slider"><div class="value"><input id="speedSlider" type="range" min="0" max="100" value="0"><div id="speedSliderValue" style="width: 20%;">0</div></div><div class="buttonTitle">Frequency (Inverter)</div></div>
+                </div>
+                <div class="row">
+                    <div id="readyLED" class="round inactive"><div class="value"></div><div class="buttonTitle">Ready</div></div>
+                    <div id="speedLED" class="round inactive"><div id="speedOutput" class="value">0</div><div class="buttonTitle">Frequency (Inverter)</div></div>
+                    <div id="currentLED" class="round inactive"><div id="currentOutput" class="value">0</div><div class="buttonTitle">Current</div></div>
+                </div>
+            </div>
+        </div>
+        <div class="part">
+            <div class="title">Input</div>
+            <div id="input" class="box"></div>
+        </div>
+        <div class="part">
+            <div class="title">Output</div>
+            <div id="output" class="box"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/gh/m-tec-com/mtecconnect3dcp/JavaScript/mtecconnect3dcp.js"></script>
+    <script>
+        var pump = new Pump();
+        pump.settings.log = true;
+
+        window.onload = function () {
+            document.getElementById("speedSlider").addEventListener("input", function () {
+                document.getElementById("speedSliderValue").innerHTML = this.value;
+            });
+        }
+
+        var keepaliveTimer = null;
+        var keepaliveInterval = 250;
+
+        async function connect() {
+            var connected = await pump.connect();
+            if (!connected) {
+                return;
+            }
+            pump.settings.sendCallback = addOutput;
+            pump.settings.receivedCallback = addInput;
+
+            await pump.stop();
+
+            if (!document.getElementById("connectedLED").classList.contains("active")) {
+                document.getElementById("connectedLED").classList.add("active");
+            }
+            document.getElementById("readyLED").classList.remove("inactive");
+            document.getElementById("speedSlider").addEventListener("change", async function () {
+                pump.frequency = this.value;
+            });
+            
+            // Start custom keepalive loop
+            startKeepAliveLoop();
+        }
+
+
+
+        callbackNum = -1;
+        function callbackSwitcher() {
+            callbackNum++;
+            callbackNum %= 3;
+            switch (callbackNum) {
+                case 0:
+                    return "03FD000001";
+                    break;
+                case 1:
+                    return "03FD060001";
+                    break;
+                case 2:
+                    return "03FD030001";
+                    break;
+            }
+        }
+
+        function startKeepAliveLoop() {
+            if (keepaliveTimer) {
+                clearInterval(keepaliveTimer);
+            }
+            keepaliveTimer = setInterval(async () => {
+                try {
+                    const command = callbackSwitcher();
+                    const value = await pump._sendHexCommand(pump._frequencyInverterID + command);
+                    updateOutput(value);
+                } catch (error) {
+                    console.error('Keepalive error:', error);
+                }
+            }, keepaliveInterval);
+        }
+
+        function stopKeepAliveLoop() {
+            if (keepaliveTimer) {
+                clearInterval(keepaliveTimer);
+                keepaliveTimer = null;
+            }
+        }
+
+        async function updateOutput(value) {
+            switch (callbackNum) {
+                case 0:
+                    document.getElementById("speedOutput").innerHTML = Math.floor(value / 10) / 10;
+                    break;
+                case 1:
+                    isReady = ((value % 32) - (value % 16) != 0);
+                    isRemote = ((value % 16) - (value % 8) != 0);
+                    if (isReady && isRemote) {
+                        if (!document.getElementById("readyLED").classList.contains("active")) {
+                            document.getElementById("readyLED").classList.add("active");
+                        }
+                    } else {
+                        if (document.getElementById("readyLED").classList.contains("active")) {
+                            document.getElementById("readyLED").classList.remove("active");
+                        }
+                    }
+                    break;
+                case 2:
+                    document.getElementById("currentOutput").innerHTML = Math.floor(value/10) / 10;
+                    break;
+            }
+        }
+
+        started = false;
+        async function startStop() {
+            started = !started;
+            if (started) {
+                await (pump.run = true);
+                if (!document.getElementById("runningLED").classList.contains("active")) {
+                    document.getElementById("runningLED").classList.add("active");
+                }
+                document.getElementById("runningTitle").innerHTML = "Stop";
+            } else {
+                await (pump.run = false);
+                if (document.getElementById("runningLED").classList.contains("active")) {
+                    document.getElementById("runningLED").classList.remove("active");
+                }
+                document.getElementById("runningTitle").innerHTML = "Start";
+            }
+        }
+
+
+        function addOutput(value) {
+            addLogElement(document.getElementById("output"), value);
+        }
+
+        function addInput(value) {
+            addLogElement(document.getElementById("input"), value);
+        }
+
+        function addLogElement(parent, value) {
+            el = document.createElement("div");
+            el.classList.add("log");
+            if (value.startsWith("03", 2)) {
+                el.classList.add("read");
+            }
+            el.innerHTML = value;
+            parent.prepend(el);
+        }
+
+    </script>
+</body>
